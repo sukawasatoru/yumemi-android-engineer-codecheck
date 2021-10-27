@@ -3,9 +3,9 @@
  */
 package jp.co.yumemi.android.code_check
 
-import android.content.Context
+import android.app.Application
 import android.os.Parcelable
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
@@ -19,12 +19,8 @@ import kotlinx.parcelize.Parcelize
 import org.json.JSONObject
 import java.util.*
 
-/**
- * TwoFragment で使う
- */
-class OneViewModel(
-    val context: Context
-) : ViewModel() {
+class OneViewModel(application: Application) : AndroidViewModel(application) {
+    private val context get() = getApplication<Application>()
 
     // 検索結果
     fun searchResults(inputText: String): List<item> = runBlocking {
