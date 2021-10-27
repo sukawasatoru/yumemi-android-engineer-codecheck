@@ -15,10 +15,12 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.*
 import dagger.hilt.android.AndroidEntryPoint
 import jp.co.yumemi.android.code_check.databinding.FragmentOneBinding
+import jp.co.yumemi.android.code_check.function.launchRepeatOnStarted
+import kotlinx.coroutines.flow.collect
 
 @AndroidEntryPoint
 class OneFragment: Fragment(R.layout.fragment_one){
-    val vm by viewModels<OneViewModel>()
+    private val vm by viewModels<OneViewModel>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?)
     {
@@ -32,7 +34,7 @@ class OneFragment: Fragment(R.layout.fragment_one){
         val _dividerItemDecoration=
             DividerItemDecoration(context, _layoutManager.orientation)
         val _adapter= CustomAdapter(object : CustomAdapter.OnItemClickListener{
-            override fun itemClick(item: item){
+            override fun itemClick(item: Item){
                 gotoRepositoryFragment(item)
             }
         })
@@ -41,9 +43,7 @@ class OneFragment: Fragment(R.layout.fragment_one){
             .setOnEditorActionListener{ editText, action, _ ->
                 if (action== EditorInfo.IME_ACTION_SEARCH){
                     editText.text.toString().let {
-                        vm.searchResults(it).apply{
-                            _adapter.submitList(this)
-                        }
+                        vm.search(it)
                     }
                     return@setOnEditorActionListener true
                 }
@@ -55,23 +55,29 @@ class OneFragment: Fragment(R.layout.fragment_one){
             it.addItemDecoration(_dividerItemDecoration)
             it.adapter= _adapter
         }
+
+        launchRepeatOnStarted {
+            vm.searchResultFlow.collect {
+                _adapter.submitList(it)
+            }
+        }
     }
 
-    fun gotoRepositoryFragment(item: item)
+    fun gotoRepositoryFragment(item: Item)
     {
         val _action= OneFragmentDirections
-            .actionRepositoriesFragmentToRepositoryFragment(item= item)
+            .actionRepositoriesFragmentToRepositoryFragment(item)
         findNavController().navigate(_action)
     }
 }
 
-val diff_util= object: DiffUtil.ItemCallback<item>(){
-    override fun areItemsTheSame(oldItem: item, newItem: item): Boolean
+val diff_util= object: DiffUtil.ItemCallback<Item>(){
+    override fun areItemsTheSame(oldItem: Item, newItem: Item): Boolean
     {
         return oldItem.name== newItem.name
     }
 
-    override fun areContentsTheSame(oldItem: item, newItem: item): Boolean
+    override fun areContentsTheSame(oldItem: Item, newItem: Item): Boolean
     {
         return oldItem== newItem
     }
@@ -80,12 +86,12 @@ val diff_util= object: DiffUtil.ItemCallback<item>(){
 
 class CustomAdapter(
     private val itemClickListener: OnItemClickListener,
-) : ListAdapter<item, CustomAdapter.ViewHolder>(diff_util){
+) : ListAdapter<Item, CustomAdapter.ViewHolder>(diff_util){
 
     class ViewHolder(view: View): RecyclerView.ViewHolder(view)
 
     interface OnItemClickListener{
-    	fun itemClick(item: item)
+    	fun itemClick(item: Item)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder
