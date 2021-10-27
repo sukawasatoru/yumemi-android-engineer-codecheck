@@ -5,6 +5,7 @@ package jp.co.yumemi.android.code_check
 
 import android.app.Application
 import android.os.Parcelable
+import androidx.annotation.Keep
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.ktor.client.*
@@ -72,6 +73,7 @@ class OneViewModel(application: Application) : AndroidViewModel(application) {
     }
 }
 
+@Keep
 @Parcelize
 data class Item(
     val name: String,
