@@ -16,6 +16,7 @@ jobs:
       - script: |
           cd android
           ./gradlew --no-daemon assemble
+          ./gradlew --no-daemon lint
         env:
           USERNAME: sukawasatoru
           TOKEN: $(GITHUB_TOKEN)
