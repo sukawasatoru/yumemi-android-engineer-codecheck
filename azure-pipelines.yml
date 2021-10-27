@@ -1,0 +1,39 @@
+variables:
+  CI: true
+trigger:
+  - master
+  - refs/tags/v*
+jobs:
+  - job:
+    displayName: Android Build
+    pool:
+      name: Default
+    variables:
+      JAVA_OPTS: "-Duser.language=en -Xms4g -Xmx4g -XX:+UseCompressedOops -XX:+ExitOnOutOfMemoryError"
+    steps:
+      - checkout: self
+        clean: true
+      - script: |
+          cd android
+          ./gradlew --no-daemon assemble
+        env:
+          USERNAME: sukawasatoru
+          TOKEN: $(GITHUB_TOKEN)
+      - publish: android/app/build/outputs
+        artifact: android
+  - job:
+    displayName: Android spotless
+    condition: false
+    pool:
+      name: Default
+    variables:
+      JAVA_OPTS: "-Duser.language=en -Xms4g -Xmx4g -XX:+UseCompressedOops -XX:+ExitOnOutOfMemoryError"
+    steps:
+      - checkout: self
+        clean: true
+      - script: |
+          cd android
+          ./gradlew --no-daemon spotlessCheck
+        env:
+          USERNAME: sukawasatoru
+          TOKEN: $(GITHUB_TOKEN)
