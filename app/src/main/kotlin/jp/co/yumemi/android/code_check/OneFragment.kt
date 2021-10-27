@@ -10,11 +10,15 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.*
+import dagger.hilt.android.AndroidEntryPoint
 import jp.co.yumemi.android.code_check.databinding.FragmentOneBinding
 
+@AndroidEntryPoint
 class OneFragment: Fragment(R.layout.fragment_one){
+    val vm by viewModels<OneViewModel>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?)
     {
@@ -23,7 +27,6 @@ class OneFragment: Fragment(R.layout.fragment_one){
         val _binding= FragmentOneBinding.bind(view)
 
         val context = requireContext()
-        val _viewModel= OneViewModel(context)
 
         val _layoutManager= LinearLayoutManager(context)
         val _dividerItemDecoration=
@@ -38,7 +41,7 @@ class OneFragment: Fragment(R.layout.fragment_one){
             .setOnEditorActionListener{ editText, action, _ ->
                 if (action== EditorInfo.IME_ACTION_SEARCH){
                     editText.text.toString().let {
-                        _viewModel.searchResults(it).apply{
+                        vm.searchResults(it).apply{
                             _adapter.submitList(this)
                         }
                     }
