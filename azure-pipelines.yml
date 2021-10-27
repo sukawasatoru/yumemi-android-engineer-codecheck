@@ -19,7 +19,7 @@ jobs:
         env:
           USERNAME: sukawasatoru
           TOKEN: $(GITHUB_TOKEN)
-      - publish: android/app/build/outputs
+      - publish: app/build/outputs
         artifact: android
   - job:
     displayName: Android spotless
