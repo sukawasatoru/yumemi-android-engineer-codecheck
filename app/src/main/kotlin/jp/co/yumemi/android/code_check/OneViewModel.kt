@@ -8,19 +8,25 @@ import android.os.Parcelable
 import androidx.annotation.Keep
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.android.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
+import dagger.hilt.android.lifecycle.HiltViewModel
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import javax.inject.Inject
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
-import org.json.JSONObject
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-class OneViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class OneViewModel @Inject constructor(
+    application: Application,
+    private val httpClient: HttpClient,
+) : AndroidViewModel(application) {
     private val context get() = getApplication<Application>()
 
     private val _searchResultFlow = MutableSharedFlow<List<Item>>(
@@ -30,31 +36,22 @@ class OneViewModel(application: Application) : AndroidViewModel(application) {
     val searchResultFlow: SharedFlow<List<Item>> = _searchResultFlow
 
     fun search(inputText: String) = viewModelScope.launch {
-        val client = HttpClient(Android)
-
-        val response: HttpResponse = client.get("https://api.github.com/search/repositories") {
-            header("Accept", "application/vnd.github.v3+json")
-            parameter("q", inputText)
-        }
-
-        val jsonBody = JSONObject(response.receive<String>())
-
-        val jsonItems = jsonBody.optJSONArray("items")!!
+        val response =
+            httpClient.get<RepositorySearchResponse>("https://api.github.com/search/repositories") {
+                header("Accept", "application/vnd.github.v3+json")
+                parameter("q", inputText)
+            }
 
         val items = mutableListOf<Item>()
 
-        /**
-         * アイテムの個数分ループする
-         */
-        for (i in 0 until jsonItems.length()) {
-            val jsonItem = jsonItems.optJSONObject(i)!!
-            val name = jsonItem.optString("full_name")
-            val ownerIconUrl = jsonItem.optJSONObject("owner")!!.optString("avatar_url")
-            val language = jsonItem.optString("language")
-            val stargazersCount = jsonItem.optLong("stargazers_count")
-            val watchersCount = jsonItem.optLong("watchers_count")
-            val forksCount = jsonItem.optLong("forks_conut")
-            val openIssuesCount = jsonItem.optLong("open_issues_count")
+        for (jsonItem in response.items) {
+            val name = jsonItem.fullName
+            val ownerIconUrl = jsonItem.owner.avatarUrl
+            val language = jsonItem.language
+            val stargazersCount = jsonItem.stargazersCount
+            val watchersCount = jsonItem.watchersCount
+            val forksCount = jsonItem.forksCount
+            val openIssuesCount = jsonItem.openIssuesCount
 
             items.add(
                 Item(
@@ -84,3 +81,30 @@ data class Item(
     val forksCount: Long,
     val openIssuesCount: Long,
 ) : Parcelable
+
+@Serializable
+data class RepositorySearchResponse(
+    val items: List<RepositoryItemResponse>,
+)
+
+@Serializable
+data class RepositoryItemResponse(
+    @SerialName("full_name")
+    val fullName: String,
+    val owner: OwnerResponse,
+    val language: String?,
+    @SerialName("stargazers_count")
+    val stargazersCount: Long,
+    @SerialName("watchers_count")
+    val watchersCount: Long,
+    @SerialName("forks_count")
+    val forksCount: Long,
+    @SerialName("open_issues_count")
+    val openIssuesCount: Long,
+)
+
+@Serializable
+data class OwnerResponse(
+    @SerialName("avatar_url")
+    val avatarUrl: String,
+)
